@@ -30,8 +30,6 @@ func TestProjectCRUD(t *testing.T) {
 	}
 }
 
-// TODO(task-4): enable once CreateTask exists.
-/*
 func TestListProjectsArchiveAndCount(t *testing.T) {
 	s := testStore(t)
 	a, _ := s.CreateProject("A", "", "")
@@ -54,4 +52,3 @@ func TestListProjectsArchiveAndCount(t *testing.T) {
 		t.Fatalf("all = %+v", all)
 	}
 }
-*/
