@@ -39,7 +39,6 @@ coverage/
 *.exe
 *.test
 *.out
-tskr
 /tskr
 
 # Brainstorming companion (visual mockups during design phase)
