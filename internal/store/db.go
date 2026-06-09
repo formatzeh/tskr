@@ -27,6 +27,10 @@ func Open(path string) (*Store, error) {
 		return nil, err
 	}
 	db.SetMaxOpenConns(1)
+	if _, err := db.Exec(`PRAGMA foreign_keys = ON`); err != nil {
+		db.Close()
+		return nil, err
+	}
 	s := &Store{db: db}
 	if err := s.migrate(); err != nil {
 		db.Close()
@@ -46,10 +50,19 @@ func (s *Store) migrate() error {
 		return err
 	}
 	if v == "" {
-		if _, err := s.db.Exec(schemaSQL); err != nil {
+		tx, err := s.db.Begin()
+		if err != nil {
 			return err
 		}
-		return s.SetMeta("schema_version", "1")
+		if _, err := tx.Exec(schemaSQL); err != nil {
+			tx.Rollback()
+			return err
+		}
+		if _, err := tx.Exec(`INSERT INTO meta (key, value) VALUES ('schema_version', '1')`); err != nil {
+			tx.Rollback()
+			return err
+		}
+		return tx.Commit()
 	}
 	return nil
 }

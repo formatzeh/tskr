@@ -14,12 +14,12 @@ CREATE TABLE IF NOT EXISTS tasks (
     title        TEXT NOT NULL,
     description  TEXT NOT NULL DEFAULT '',
     status       TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending','in_progress','done')),
-    priority     TEXT CHECK (priority IN ('low','medium','high','urgent')),
-    due_date     TEXT,
+    priority     TEXT CHECK (priority IN ('low','medium','high','urgent')), -- NULL = none; COALESCE on read
+    due_date     TEXT,                                                      -- NULL = no due date; COALESCE on read
     tags         TEXT NOT NULL DEFAULT '',
     created_at   TEXT NOT NULL,
     updated_at   TEXT NOT NULL,
-    completed_at TEXT
+    completed_at TEXT -- NULL = not done; COALESCE on read
 );
 
 CREATE TABLE IF NOT EXISTS subtasks (

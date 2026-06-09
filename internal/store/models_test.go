@@ -24,6 +24,7 @@ func TestOverdue(t *testing.T) {
 		{Task{DueDate: "2026-06-08", Status: StatusPending}, true},
 		{Task{DueDate: "2026-06-09", Status: StatusPending}, false},
 		{Task{DueDate: "2026-06-08", Status: StatusDone}, false},
+		{Task{DueDate: "2026-06-08", Status: StatusInProgress}, true},
 		{Task{DueDate: "", Status: StatusPending}, false},
 	}
 	for i, c := range cases {
