@@ -180,6 +180,9 @@ func (s *Store) DeleteTask(id int64) error {
 // DeleteTaskCascade removes the task's dependency links (in both
 // directions), then deletes the task. Dependent tasks survive.
 func (s *Store) DeleteTaskCascade(id int64) error {
+	// task_deps rows would also be removed by the FK ON DELETE CASCADE;
+	// the explicit delete is kept as a safety net in case FK enforcement
+	// is ever off for a connection.
 	if _, err := s.db.Exec(`DELETE FROM task_deps WHERE blocker_id=? OR blocked_id=?`, id, id); err != nil {
 		return err
 	}

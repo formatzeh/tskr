@@ -34,14 +34,20 @@ func TestTaskCRUDAndStatus(t *testing.T) {
 	if err := s.SetTaskStatus(id, StatusDone); err != nil {
 		t.Fatal(err)
 	}
-	task, _ = s.GetTask(id)
+	task, err = s.GetTask(id)
+	if err != nil {
+		t.Fatal(err)
+	}
 	if task.Status != StatusDone || task.CompletedAt == "" {
 		t.Fatalf("done should set completed_at: %+v", task)
 	}
 	if err := s.SetTaskStatus(id, StatusInProgress); err != nil {
 		t.Fatal(err)
 	}
-	task, _ = s.GetTask(id)
+	task, err = s.GetTask(id)
+	if err != nil {
+		t.Fatal(err)
+	}
 	if task.CompletedAt != "" {
 		t.Fatalf("leaving done should clear completed_at: %+v", task)
 	}
@@ -49,7 +55,10 @@ func TestTaskCRUDAndStatus(t *testing.T) {
 	if err := s.UpdateTask(id, "New", "", PriorityNone, "", ""); err != nil {
 		t.Fatal(err)
 	}
-	task, _ = s.GetTask(id)
+	task, err = s.GetTask(id)
+	if err != nil {
+		t.Fatal(err)
+	}
 	if task.Title != "New" || task.Priority != PriorityNone || task.DueDate != "" {
 		t.Fatalf("update failed: %+v", task)
 	}
