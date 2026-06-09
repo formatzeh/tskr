@@ -1,6 +1,7 @@
 package store
 
 import (
+	"errors"
 	"testing"
 )
 
@@ -97,8 +98,6 @@ func TestListTasksFilterAndSort(t *testing.T) {
 	}
 }
 
-// TODO(task-7): enable once AddDependency exists.
-/*
 func TestDeleteGuard(t *testing.T) {
 	s, pid := projectWithTasks(t)
 	blocker, _ := s.CreateTask(pid, "blocker", "", PriorityNone, "", "")
@@ -124,4 +123,3 @@ func TestDeleteGuard(t *testing.T) {
 		t.Fatalf("dependency links should be gone: %+v", task)
 	}
 }
-*/
