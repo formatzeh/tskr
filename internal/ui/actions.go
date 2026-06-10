@@ -112,7 +112,11 @@ func (m *Model) handleAction(msg tea.Msg) (tea.Cmd, bool) {
 		err = m.st.DeleteProject(a.id)
 		info = "project deleted"
 		if err == nil && m.project != nil && m.project.ID == a.id {
+			// The stack may still hold the picker the delete started from
+			// (and the confirm's CloseModal lands in arbitrary batch order),
+			// so rebuild it with a single fresh picker.
 			m.project = nil
+			m.modals = nil
 			m.pushModal(m.newPicker(false))
 		}
 	case addSubtaskMsg:

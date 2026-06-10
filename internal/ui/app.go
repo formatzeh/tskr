@@ -125,6 +125,11 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if len(m.modals) > 0 {
 			m.modals = m.modals[:len(m.modals)-1]
 		}
+		// Never strand the user with no project and no modal (e.g. after
+		// deleting the current project from the picker).
+		if len(m.modals) == 0 && m.project == nil {
+			m.pushModal(m.newPicker(false))
+		}
 		return m, nil
 
 	case msgs.OpenProject:
