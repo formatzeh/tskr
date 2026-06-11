@@ -14,9 +14,9 @@ func taskFixture(t *testing.T) (*Store, int64) {
 
 func TestSubtaskLifecycle(t *testing.T) {
 	s, tid := taskFixture(t)
-	a, _ := s.AddSubtask(tid, "one")
-	b, _ := s.AddSubtask(tid, "two")
-	c, _ := s.AddSubtask(tid, "three")
+	a, _ := s.AddSubtask(tid, "one", "")
+	b, _ := s.AddSubtask(tid, "two", "")
+	c, _ := s.AddSubtask(tid, "three", "")
 
 	list, err := s.ListSubtasks(tid)
 	if err != nil || len(list) != 3 {
@@ -49,7 +49,7 @@ func TestSubtaskLifecycle(t *testing.T) {
 		t.Fatal(err) // moving the first up is a no-op
 	}
 
-	if err := s.UpdateSubtask(a, "renamed"); err != nil {
+	if err := s.UpdateSubtask(a, "renamed", ""); err != nil {
 		t.Fatal(err)
 	}
 	if err := s.DeleteSubtask(a); err != nil {

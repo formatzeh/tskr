@@ -21,8 +21,8 @@ func TestOpenMigrates(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if v != "1" {
-		t.Fatalf("schema_version = %q, want 1", v)
+	if v != "2" {
+		t.Fatalf("schema_version = %q, want 2", v)
 	}
 	for _, table := range []string{"projects", "tasks", "subtasks", "task_deps", "notes", "time_entries"} {
 		var n int

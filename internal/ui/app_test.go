@@ -2,6 +2,7 @@ package ui
 
 import (
 	"path/filepath"
+	"strings"
 	"testing"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -81,3 +82,29 @@ func TestOpenProjectAndFocusFlow(t *testing.T) {
 }
 
 func msgsOpenProject(id int64) tea.Msg { return msgs.OpenProject{ID: id} }
+
+// TestErrorVisibleWhileModalOpen reproduces the silent save failure:
+// a store error during a modal flow (here a UNIQUE name collision) must
+// show up on screen even though a modal is covering the main view.
+func TestErrorVisibleWhileModalOpen(t *testing.T) {
+	s, cfg, path := fixture(t)
+	if _, err := s.CreateProject("Demo", "", ""); err != nil {
+		t.Fatal(err)
+	}
+	m := New(s, cfg, path)
+	m = drive(m, tea.WindowSizeMsg{Width: 100, Height: 30})
+
+	m = press(m, "n") // new-project form on top of the picker
+	m = typeStr(m, "Demo")
+	m = press(m, "enter") // duplicate name -> save fails
+
+	if len(m.modals) != 1 {
+		t.Fatalf("form should close back to the picker, got %d modals", len(m.modals))
+	}
+	if !m.statusErr || m.status == "" {
+		t.Fatalf("failed save must set an error status, got %q (err=%v)", m.status, m.statusErr)
+	}
+	if v := m.View(); !strings.Contains(v, m.status) {
+		t.Fatalf("error status must be visible while a modal is open; status %q not in view", m.status)
+	}
+}

@@ -27,7 +27,7 @@ var (
 		{"j/k", "move"}, {"enter", "open"}, {"/", "search"}, {"n", "new"},
 		{"e", "edit"}, {"d", "delete"}, {"s", "archive"}, {"A", "show archived"},
 	}
-	Form    = []Hint{{"tab", "next field"}, {"enter", "save"}, {"esc", "cancel"}}
+	Form    = []Hint{{"tab", "next field"}, {"←/→", "select option"}, {"enter", "save"}, {"esc", "cancel"}}
 	Confirm = []Hint{{"y", "confirm"}, {"n/esc", "cancel"}}
 	Deps    = []Hint{{"j/k", "move"}, {"space", "toggle blocks"}, {"/", "search"}, {"esc", "done"}}
 	HelpBar = []Hint{{"any key", "close"}}

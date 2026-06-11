@@ -1,8 +1,6 @@
 package forms
 
 import (
-	"strings"
-
 	tea "github.com/charmbracelet/bubbletea"
 
 	"tskr/internal/store"
@@ -16,15 +14,23 @@ func TaskForm(title string, t *store.Task, submit func(title, desc string, prio 
 	if t != nil {
 		v = *t
 	}
+	prioLabels := []string{"None", "Low", "Medium", "High", "Urgent"}
+	prioValues := []string{"", "low", "medium", "high", "urgent"}
+	prioIdx := 0
+	for i, pv := range prioValues {
+		if string(v.Priority) == pv {
+			prioIdx = i
+		}
+	}
 	fields := []Field{
 		NewField("Title", v.Title, "task title", Required),
 		NewField("Description", v.Description, "", nil),
-		NewField("Priority", string(v.Priority), "low / medium / high / urgent — empty = none", OptionalPriority),
+		NewSelectField("Priority", prioLabels, prioValues, prioIdx),
 		NewField("Due date", v.DueDate, "YYYY-MM-DD — empty = none", OptionalDate),
 		NewField("Tags", v.Tags, "comma,separated", nil),
 	}
 	return New(title, fields, func(vals []string) tea.Msg {
-		return submit(vals[0], vals[1], store.Priority(strings.ToLower(vals[2])), vals[3], vals[4])
+		return submit(vals[0], vals[1], store.Priority(vals[2]), vals[3], vals[4])
 	})
 }
 
@@ -44,7 +50,22 @@ func ProjectForm(title string, p *store.Project, submit func(name, desc, tags st
 	})
 }
 
-// TextForm is a single required text field (subtask title, note body).
+// SubtaskForm builds the new/edit subtask form: required title, optional description.
+func SubtaskForm(title string, st *store.Subtask, submit func(title, description string) tea.Msg) Model {
+	var v store.Subtask
+	if st != nil {
+		v = *st
+	}
+	fields := []Field{
+		NewField("Title", v.Title, "subtask title", Required),
+		NewField("Description", v.Description, "optional", nil),
+	}
+	return New(title, fields, func(vals []string) tea.Msg {
+		return submit(vals[0], vals[1])
+	})
+}
+
+// TextForm is a single required text field (note body).
 func TextForm(title, label, value string, submit func(string) tea.Msg) Model {
 	fields := []Field{NewField(label, value, "", Required)}
 	return New(title, fields, func(vals []string) tea.Msg { return submit(vals[0]) })

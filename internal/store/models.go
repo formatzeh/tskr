@@ -67,12 +67,13 @@ type TaskRef struct {
 }
 
 type Subtask struct {
-	ID        int64
-	TaskID    int64
-	Title     string
-	Done      bool
-	Position  int
-	CreatedAt string
+	ID          int64
+	TaskID      int64
+	Title       string
+	Description string
+	Done        bool
+	Position    int
+	CreatedAt   string
 }
 
 type Note struct {

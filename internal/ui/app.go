@@ -351,8 +351,8 @@ func (m Model) handleDetailKey(s string, key tea.KeyMsg) (tea.Model, tea.Cmd) {
 		return m, nil
 	case "a":
 		tid := task.ID
-		m.pushModal(forms.TextForm("New subtask", "Title", "", func(v string) tea.Msg {
-			return addSubtaskMsg{taskID: tid, title: v}
+		m.pushModal(forms.SubtaskForm("New subtask", nil, func(title, desc string) tea.Msg {
+			return addSubtaskMsg{taskID: tid, title: title, description: desc}
 		}))
 		return m, nil
 	case "n":
@@ -375,8 +375,8 @@ func (m Model) handleDetailKey(s string, key tea.KeyMsg) (tea.Model, tea.Cmd) {
 			switch it.Kind {
 			case detail.ItemSubtask:
 				st := m.dt.Subtask(it.Idx)
-				m.pushModal(forms.TextForm("Edit subtask", "Title", st.Title, func(v string) tea.Msg {
-					return editSubtaskMsg{id: st.ID, title: v}
+				m.pushModal(forms.SubtaskForm("Edit subtask", &st, func(title, desc string) tea.Msg {
+					return editSubtaskMsg{id: st.ID, title: title, description: desc}
 				}))
 			case detail.ItemNote:
 				n := m.dt.Note(it.Idx)
@@ -422,7 +422,10 @@ func (m Model) View() string {
 		return ""
 	}
 	if n := len(m.modals); n > 0 {
-		return lipgloss.Place(m.w, m.h, lipgloss.Center, lipgloss.Center, m.modals[n-1].View())
+		// Keep the bottom line for status text so store errors stay
+		// visible during modal flows (modals render their own key hints).
+		body := lipgloss.Place(m.w, m.h-1, lipgloss.Center, lipgloss.Center, m.modals[n-1].View())
+		return lipgloss.JoinVertical(lipgloss.Left, body, m.renderStatusText())
 	}
 	if m.project == nil {
 		return ""
@@ -453,7 +456,7 @@ func renderPanel(title, content string, w, h int, focused bool) string {
 
 func (m Model) renderTabs() string {
 	var parts []string
-	for i := tasklist.TabPending; i <= tasklist.TabAll; i++ {
+	for i := tasklist.TabAll; i <= tasklist.TabDone; i++ {
 		if i == m.tl.CurrentTab() {
 			parts = append(parts, styles.TabActive.Render(i.String()))
 		} else {
@@ -469,13 +472,20 @@ func (m Model) renderTabs() string {
 	return tabs + strings.Repeat(" ", pad) + name
 }
 
+func (m Model) renderStatusText() string {
+	if m.status == "" {
+		return ""
+	}
+	st := styles.Ok
+	if m.statusErr {
+		st = styles.Err
+	}
+	return " " + st.Render(m.status)
+}
+
 func (m Model) renderStatusBar() string {
 	if m.status != "" {
-		st := styles.Ok
-		if m.statusErr {
-			st = styles.Err
-		}
-		return " " + st.Render(m.status)
+		return m.renderStatusText()
 	}
 	var hints []keys.Hint
 	switch {

@@ -11,6 +11,7 @@ import (
 	"tskr/internal/config"
 	"tskr/internal/store"
 	"tskr/internal/ui"
+	"tskr/internal/ui/styles"
 )
 
 func main() {
@@ -20,6 +21,8 @@ func main() {
 		fmt.Fprintln(os.Stderr, "tskr: config:", err)
 		os.Exit(1)
 	}
+	styles.ApplyColors(cfg.Colors)
+
 	st, err := store.Open(cfg.DBPath)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "tskr: database:", err)

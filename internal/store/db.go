@@ -45,6 +45,14 @@ func (s *Store) migrate() error {
 	if _, err := s.db.Exec(`CREATE TABLE IF NOT EXISTS meta (key TEXT PRIMARY KEY, value TEXT NOT NULL)`); err != nil {
 		return err
 	}
+	if legacy, err := s.isLegacyDB(); err != nil {
+		return err
+	} else if legacy {
+		if err := s.migrateLegacy(); err != nil {
+			return fmt.Errorf("legacy db: %w", err)
+		}
+		return nil
+	}
 	v, err := s.GetMeta("schema_version")
 	if err != nil {
 		return err
@@ -58,11 +66,17 @@ func (s *Store) migrate() error {
 			tx.Rollback()
 			return err
 		}
-		if _, err := tx.Exec(`INSERT INTO meta (key, value) VALUES ('schema_version', '1')`); err != nil {
+		if _, err := tx.Exec(`INSERT INTO meta (key, value) VALUES ('schema_version', '2')`); err != nil {
 			tx.Rollback()
 			return err
 		}
 		return tx.Commit()
+	}
+	if v == "1" {
+		if _, err := s.db.Exec(`ALTER TABLE subtasks ADD COLUMN description TEXT NOT NULL DEFAULT ''`); err != nil {
+			return err
+		}
+		return s.SetMeta("schema_version", "2")
 	}
 	return nil
 }

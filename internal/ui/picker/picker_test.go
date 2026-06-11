@@ -66,8 +66,11 @@ func TestEscRespectsAllowClose(t *testing.T) {
 	s := testStore(t)
 	s.CreateProject("Alpha", "", "")
 	_, cmd := New(s, false).Update(key("esc"))
-	if cmd != nil {
-		t.Fatal("startup picker must not close on esc")
+	if cmd == nil {
+		t.Fatal("startup picker: esc should quit the app")
+	}
+	if msg := cmd(); msg != tea.Quit() {
+		t.Fatalf("startup picker esc: want tea.Quit, got %v", msg)
 	}
 	_, cmd = New(s, true).Update(key("esc"))
 	if cmd == nil {
@@ -75,5 +78,26 @@ func TestEscRespectsAllowClose(t *testing.T) {
 	}
 	if _, ok := cmd().(msgs.CloseModal); !ok {
 		t.Fatalf("want CloseModal, got %v", cmd())
+	}
+}
+
+func TestQuitFromStartupPicker(t *testing.T) {
+	s := testStore(t)
+	for _, k := range []string{"q", "esc"} {
+		_, cmd := New(s, false).Update(key(k))
+		if cmd == nil {
+			t.Fatalf("startup picker: %q should quit", k)
+		}
+		if msg := cmd(); msg != tea.Quit() {
+			t.Fatalf("startup picker %q: want tea.Quit, got %v", k, msg)
+		}
+	}
+	// On-demand picker (allowClose=true) must not quit on q — it closes.
+	_, cmd := New(s, true).Update(key("q"))
+	if cmd == nil {
+		t.Fatal("on-demand picker: q should close")
+	}
+	if _, ok := cmd().(msgs.CloseModal); !ok {
+		t.Fatalf("on-demand picker q: want CloseModal, got %v", cmd())
 	}
 }

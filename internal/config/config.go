@@ -10,15 +10,31 @@ import (
 	"github.com/BurntSushi/toml"
 )
 
+// ColorConfig holds optional hex color overrides ("#rrggbb").
+// Empty strings mean "use the built-in default."
+type ColorConfig struct {
+	Cyan    string `toml:"cyan"`    // cursor, borders, accent, description text
+	Magenta string `toml:"magenta"` // tags
+	Blue    string `toml:"blue"`    // dates, note bodies
+	Green   string `toml:"green"`   // done status, low priority
+	Yellow  string `toml:"yellow"`  // in-progress status, medium priority
+	Orange  string `toml:"orange"`  // high priority
+	Red     string `toml:"red"`     // urgent priority, errors, overdue
+	Gray    string `toml:"gray"`    // key labels (Status, Priority…), dim text
+	Light   string `toml:"light"`   // secondary text, form labels, hints
+	Text    string `toml:"text"`    // primary text
+}
+
 type Config struct {
-	Startup    string  `toml:"startup"`     // "picker" | "last-project"
-	SplitRatio float64 `toml:"split_ratio"` // left panel fraction, 0.2–0.8
-	DBPath     string  `toml:"db_path"`
+	Startup    string      `toml:"startup"`     // "picker" | "last-project"
+	SplitRatio float64     `toml:"split_ratio"` // left panel fraction, 0.2–0.8
+	DBPath     string      `toml:"db_path"`
+	Colors     ColorConfig `toml:"colors"`
 }
 
 func Default() Config {
 	return Config{
-		Startup:    "picker",
+		Startup:    "last-project",
 		SplitRatio: 0.42,
 		DBPath:     filepath.Join(DataDir(), "tskr.db"),
 	}

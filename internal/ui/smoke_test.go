@@ -12,6 +12,7 @@ import (
 	"tskr/internal/ui/confirm"
 	"tskr/internal/ui/help"
 	"tskr/internal/ui/picker"
+	"tskr/internal/ui/tasklist"
 )
 
 // sk extends key() with the non-rune keys the smoke test needs.
@@ -144,27 +145,32 @@ func TestSmokeChecklist(t *testing.T) {
 		t.Fatal("task should appear in the Pending tab")
 	}
 
-	// 3. Status menu and cycling move the task across tabs.
+	// 3. Status menu and cycling move the task across tabs; the tab
+	// follows automatically — no manual tab switch needed.
 	m = press(m, "S", "j", "enter") // pending -> in_progress via menu
 	if got, _ := s.GetTask(tasks[0].ID); got.Status != store.StatusInProgress {
 		t.Fatalf("status menu failed: %+v", got.Status)
 	}
-	if len(m.tl.Visible()) != 0 {
-		t.Fatal("in-progress task must leave the Pending tab")
+	if m.tl.CurrentTab() != tasklist.TabInProgress {
+		t.Fatalf("tab should auto-follow to In Progress, got %v", m.tl.CurrentTab())
 	}
-	m = press(m, "2") // In Progress tab
 	if len(m.tl.Visible()) != 1 {
 		t.Fatal("task should appear in the In Progress tab")
 	}
-	m = press(m, "s") // -> done
+	m = press(m, "s") // in_progress -> done; tab follows
 	if got, _ := s.GetTask(tasks[0].ID); got.Status != store.StatusDone || got.CompletedAt == "" {
 		t.Fatalf("s should cycle to done: %+v", got)
 	}
-	m = press(m, "3")
+	if m.tl.CurrentTab() != tasklist.TabDone {
+		t.Fatalf("tab should auto-follow to Done, got %v", m.tl.CurrentTab())
+	}
 	if len(m.tl.Visible()) != 1 {
 		t.Fatal("done task should appear in the Done tab")
 	}
-	m = press(m, "s", "1") // done -> pending, back to first tab
+	m = press(m, "s") // done -> pending; tab follows
+	if m.tl.CurrentTab() != tasklist.TabPending {
+		t.Fatalf("tab should auto-follow to Pending, got %v", m.tl.CurrentTab())
+	}
 	if len(m.tl.Visible()) != 1 {
 		t.Fatal("pending task should be back in the Pending tab")
 	}

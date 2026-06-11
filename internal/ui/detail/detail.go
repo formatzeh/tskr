@@ -223,7 +223,11 @@ func (m *Model) rebuild() {
 				box = "[x] "
 				title = styles.Green.Render(title)
 			}
-			lines = append(lines, m.cursorMark(len(m.items)-1)+box+title)
+			row := m.cursorMark(len(m.items)-1) + box + title
+			if st.Description != "" {
+				row += "  " + styles.Label.Render(st.Description)
+			}
+			lines = append(lines, row)
 		}
 	}
 

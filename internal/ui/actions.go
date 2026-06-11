@@ -5,6 +5,7 @@ import (
 
 	"tskr/internal/store"
 	"tskr/internal/ui/msgs"
+	"tskr/internal/ui/tasklist"
 )
 
 // Action messages are emitted by form/confirm closures and handled by
@@ -40,12 +41,14 @@ type saveProjectMsg struct {
 type deleteProjectMsg struct{ id int64 }
 
 type addSubtaskMsg struct {
-	taskID int64
-	title  string
+	taskID      int64
+	title       string
+	description string
 }
 type editSubtaskMsg struct {
-	id    int64
-	title string
+	id          int64
+	title       string
+	description string
 }
 type deleteSubtaskMsg struct{ id int64 }
 
@@ -95,6 +98,9 @@ func (m *Model) handleAction(msg tea.Msg) (tea.Cmd, bool) {
 	case setStatusMsg:
 		err = m.st.SetTaskStatus(a.id, a.status)
 		info = "status: " + string(a.status)
+		if err == nil && m.tl.CurrentTab() != tasklist.TabAll {
+			m.tl.SwitchToStatus(a.status, a.id)
+		}
 	case saveProjectMsg:
 		if a.id == 0 {
 			_, err = m.st.CreateProject(a.name, a.desc, a.tags)
@@ -120,9 +126,9 @@ func (m *Model) handleAction(msg tea.Msg) (tea.Cmd, bool) {
 			m.pushModal(m.newPicker(false))
 		}
 	case addSubtaskMsg:
-		_, err = m.st.AddSubtask(a.taskID, a.title)
+		_, err = m.st.AddSubtask(a.taskID, a.title, a.description)
 	case editSubtaskMsg:
-		err = m.st.UpdateSubtask(a.id, a.title)
+		err = m.st.UpdateSubtask(a.id, a.title, a.description)
 	case deleteSubtaskMsg:
 		err = m.st.DeleteSubtask(a.id)
 	case addNoteMsg:

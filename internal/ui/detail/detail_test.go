@@ -31,8 +31,8 @@ func fixture(t *testing.T) (*store.Store, int64) {
 
 func TestCursorWalksItems(t *testing.T) {
 	s, tid := fixture(t)
-	s.AddSubtask(tid, "one")
-	s.AddSubtask(tid, "two")
+	s.AddSubtask(tid, "one", "")
+	s.AddSubtask(tid, "two", "")
 	s.AddNote(tid, "a note")
 
 	m := New(s)
@@ -61,7 +61,7 @@ func TestCursorWalksItems(t *testing.T) {
 
 func TestSpaceTogglesSubtask(t *testing.T) {
 	s, tid := fixture(t)
-	sid, _ := s.AddSubtask(tid, "one")
+	sid, _ := s.AddSubtask(tid, "one", "")
 	m := New(s)
 	m.SetSize(60, 30)
 	m.SetTask(tid)

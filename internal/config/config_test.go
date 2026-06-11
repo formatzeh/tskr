@@ -12,7 +12,7 @@ func TestLoadCreatesDefaults(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if cfg.Startup != "picker" || cfg.SplitRatio != 0.42 || cfg.DBPath == "" {
+	if cfg.Startup != "last-project" || cfg.SplitRatio != 0.42 || cfg.DBPath == "" {
 		t.Fatalf("defaults: %+v", cfg)
 	}
 	if _, err := os.Stat(path); err != nil {

@@ -135,6 +135,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if m.allowClose {
 				return m, msgs.Cmd(msgs.CloseModal{})
 			}
+			return m, tea.Quit
 		}
 	}
 	return m, nil

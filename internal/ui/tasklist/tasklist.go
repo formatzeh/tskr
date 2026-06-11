@@ -21,14 +21,14 @@ import (
 type Tab int
 
 const (
-	TabPending Tab = iota
+	TabAll Tab = iota
+	TabPending
 	TabInProgress
 	TabDone
-	TabAll
 )
 
 func (t Tab) String() string {
-	return [...]string{"Pending", "In Progress", "Done", "All"}[t]
+	return [...]string{"All", "Pending", "In Progress", "Done"}[t]
 }
 
 // Status maps the tab to its store filter ("" = all).
@@ -46,25 +46,26 @@ func (t Tab) Status() store.TaskStatus {
 }
 
 type Model struct {
-	st        *store.Store
-	projectID int64
-	tab       Tab
-	sort      store.SortMode
-	search    textinput.Model
-	searching bool
-	tasks     []store.Task
-	visible   []store.Task
-	sel       int
-	width     int
-	height    int
-	Focused   bool
+	st             *store.Store
+	projectID      int64
+	tab            Tab
+	sort           store.SortMode
+	search         textinput.Model
+	searching      bool
+	tasks          []store.Task
+	visible        []store.Task
+	sel            int
+	pendingFocusID int64 // if >0, position cursor on this task ID after next Reload
+	width          int
+	height         int
+	Focused        bool
 }
 
 func New(st *store.Store) Model {
 	ti := textinput.New()
 	ti.Placeholder = "search…"
 	ti.Width = 24
-	return Model{st: st, sort: store.SortCreated, search: ti, Focused: true}
+	return Model{st: st, tab: TabPending, sort: store.SortCreated, search: ti, Focused: true}
 }
 
 func (m *Model) SetSize(w, h int) { m.width, m.height = w, h }
@@ -83,7 +84,33 @@ func (m *Model) Reload() error {
 	}
 	m.tasks = tasks
 	m.applyFilter()
+	if m.pendingFocusID > 0 {
+		for i, t := range m.visible {
+			if t.ID == m.pendingFocusID {
+				m.sel = i
+				break
+			}
+		}
+		m.pendingFocusID = 0
+	}
 	return nil
+}
+
+// SwitchToStatus switches to the tab that matches status and marks focusID
+// to be selected after the next Reload (which happens via msgs.Refresh).
+func (m *Model) SwitchToStatus(status store.TaskStatus, focusID int64) {
+	switch status {
+	case store.StatusPending:
+		m.tab = TabPending
+	case store.StatusInProgress:
+		m.tab = TabInProgress
+	case store.StatusDone:
+		m.tab = TabDone
+	default:
+		m.tab = TabAll
+	}
+	m.sel = 0
+	m.pendingFocusID = focusID
 }
 
 func (m *Model) applyFilter() {

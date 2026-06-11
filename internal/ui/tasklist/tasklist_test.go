@@ -44,11 +44,11 @@ func TestTabsFilterByStatus(t *testing.T) {
 	if sel := m.Selected(); sel == nil || sel.ID != a {
 		t.Fatalf("pending tab should show task a, got %+v", sel)
 	}
-	m.Update(key("3")) // Done tab
+	m.Update(key("4")) // Done tab
 	if sel := m.Selected(); sel == nil || sel.ID != b {
 		t.Fatalf("done tab should show task b, got %+v", sel)
 	}
-	m.Update(key("4")) // All tab
+	m.Update(key("1")) // All tab
 	if len(m.Visible()) != 2 {
 		t.Fatalf("all tab should show 2, got %d", len(m.Visible()))
 	}

@@ -23,12 +23,13 @@ CREATE TABLE IF NOT EXISTS tasks (
 );
 
 CREATE TABLE IF NOT EXISTS subtasks (
-    id         INTEGER PRIMARY KEY AUTOINCREMENT,
-    task_id    INTEGER NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
-    title      TEXT NOT NULL,
-    done       INTEGER NOT NULL DEFAULT 0,
-    position   INTEGER NOT NULL,
-    created_at TEXT NOT NULL
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    task_id     INTEGER NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
+    title       TEXT NOT NULL,
+    description TEXT NOT NULL DEFAULT '',
+    done        INTEGER NOT NULL DEFAULT 0,
+    position    INTEGER NOT NULL,
+    created_at  TEXT NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS task_deps (

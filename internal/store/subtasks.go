@@ -2,21 +2,21 @@ package store
 
 import "database/sql"
 
-func (s *Store) AddSubtask(taskID int64, title string) (int64, error) {
+func (s *Store) AddSubtask(taskID int64, title, description string) (int64, error) {
 	var max sql.NullInt64
 	if err := s.db.QueryRow(`SELECT MAX(position) FROM subtasks WHERE task_id=?`, taskID).Scan(&max); err != nil {
 		return 0, err
 	}
-	res, err := s.db.Exec(`INSERT INTO subtasks (task_id, title, done, position, created_at)
-		VALUES (?, ?, 0, ?, ?)`, taskID, title, max.Int64+1, now())
+	res, err := s.db.Exec(`INSERT INTO subtasks (task_id, title, description, done, position, created_at)
+		VALUES (?, ?, ?, 0, ?, ?)`, taskID, title, description, max.Int64+1, now())
 	if err != nil {
 		return 0, err
 	}
 	return res.LastInsertId()
 }
 
-func (s *Store) UpdateSubtask(id int64, title string) error {
-	_, err := s.db.Exec(`UPDATE subtasks SET title=? WHERE id=?`, title, id)
+func (s *Store) UpdateSubtask(id int64, title, description string) error {
+	_, err := s.db.Exec(`UPDATE subtasks SET title=?, description=? WHERE id=?`, title, description, id)
 	return err
 }
 
@@ -31,7 +31,7 @@ func (s *Store) DeleteSubtask(id int64) error {
 }
 
 func (s *Store) ListSubtasks(taskID int64) ([]Subtask, error) {
-	rows, err := s.db.Query(`SELECT id, task_id, title, done, position, created_at
+	rows, err := s.db.Query(`SELECT id, task_id, title, description, done, position, created_at
 		FROM subtasks WHERE task_id=? ORDER BY position`, taskID)
 	if err != nil {
 		return nil, err
@@ -41,7 +41,7 @@ func (s *Store) ListSubtasks(taskID int64) ([]Subtask, error) {
 	for rows.Next() {
 		var st Subtask
 		var done int
-		if err := rows.Scan(&st.ID, &st.TaskID, &st.Title, &done, &st.Position, &st.CreatedAt); err != nil {
+		if err := rows.Scan(&st.ID, &st.TaskID, &st.Title, &st.Description, &done, &st.Position, &st.CreatedAt); err != nil {
 			return nil, err
 		}
 		st.Done = done == 1
