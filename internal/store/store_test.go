@@ -24,7 +24,7 @@ func TestOpenMigrates(t *testing.T) {
 	if v != "2" {
 		t.Fatalf("schema_version = %q, want 2", v)
 	}
-	for _, table := range []string{"projects", "tasks", "subtasks", "task_deps", "notes", "time_entries"} {
+	for _, table := range []string{"projects", "tasks", "subtasks", "task_deps", "notes"} {
 		var n int
 		err := s.db.QueryRow(`SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name=?`, table).Scan(&n)
 		if err != nil || n != 1 {

@@ -190,7 +190,7 @@ func (s *Store) migrateLegacy() error {
 	// Children before parents so foreign keys don't block the drops.
 	for _, name := range []string{
 		"task_tags_legacy", "project_tags_legacy", "task_dependencies_legacy",
-		"task_deps_legacy", "notes_legacy", "subtasks_legacy",
+		"task_deps_legacy", "timelogs_legacy", "time_logs_legacy", "notes_legacy", "subtasks_legacy",
 		"tags_legacy", "tasks_legacy", "projects_legacy",
 	} {
 		if _, err := tx.Exec(`DROP TABLE ` + name); err != nil {

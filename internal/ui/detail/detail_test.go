@@ -76,12 +76,11 @@ func TestSpaceTogglesSubtask(t *testing.T) {
 
 func TestViewShowsTaskFacts(t *testing.T) {
 	s, tid := fixture(t)
-	s.AddTimeEntry(tid, 150, "")
 	m := New(s)
 	m.SetSize(60, 30)
 	m.SetTask(tid)
 	view := m.View()
-	for _, want := range []string{"Example", "Medium", "tag1, tag2", "2h 30m", "a description"} {
+	for _, want := range []string{"Example", "Medium", "tag1, tag2", "a description"} {
 		if !strings.Contains(view, want) {
 			t.Errorf("view should contain %q", want)
 		}

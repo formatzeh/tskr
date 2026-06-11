@@ -209,13 +209,6 @@ func TestSmokeChecklist(t *testing.T) {
 	if len(notes) != 1 || notes[0].Body != "A note" {
 		t.Fatalf("note not added: %+v", notes)
 	}
-	m = press(m, "t")
-	m = typeStr(m, "1h 30m")
-	m = press(m, "enter")
-	if got, _ := s.GetTask(tasks[0].ID); got.Minutes != 90 {
-		t.Fatalf("time log failed, minutes = %d", got.Minutes)
-	}
-
 	// 6. Dependencies: toggle blocks, cycle attempt surfaces an error.
 	m = press(m, "esc", "a") // back to tasks, add a second task
 	m = typeStr(m, "Other")

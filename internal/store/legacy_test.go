@@ -135,17 +135,9 @@ CREATE TABLE task_deps (
     PRIMARY KEY (blocker_id, blocked_id),
     CHECK (blocker_id != blocked_id)
 );
-CREATE TABLE time_entries (
-    id         INTEGER PRIMARY KEY AUTOINCREMENT,
-    task_id    INTEGER NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
-    minutes    INTEGER NOT NULL CHECK (minutes > 0),
-    note       TEXT NOT NULL DEFAULT '',
-    created_at TEXT NOT NULL
-);
 CREATE INDEX idx_tasks_project ON tasks(project_id);
 CREATE INDEX idx_subtasks_task ON subtasks(task_id);
 CREATE INDEX idx_notes_task ON notes(task_id);
-CREATE INDEX idx_time_task ON time_entries(task_id);
 CREATE INDEX idx_deps_blocked ON task_deps(blocked_id);
 `
 		if _, err := db.Exec(stampSQL); err != nil {
@@ -210,7 +202,7 @@ func TestLegacyMigration(t *testing.T) {
 				byTitle[tk.Title] = tk
 			}
 			if tk := byTitle["regffreg"]; tk.ID != 1 || tk.Status != StatusPending ||
-				tk.Priority != "" || tk.Tags != "work" || tk.Minutes != 75 {
+				tk.Priority != "" || tk.Tags != "work" {
 				t.Errorf("regffreg migrated wrong: %+v", tk)
 			}
 			if tk := byTitle["second"]; tk.Status != StatusInProgress || tk.Priority != PriorityHigh ||

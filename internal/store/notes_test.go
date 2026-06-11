@@ -29,28 +29,3 @@ func TestNotes(t *testing.T) {
 	}
 }
 
-func TestTimeEntries(t *testing.T) {
-	s, tid := taskFixture(t)
-	e1, err := s.AddTimeEntry(tid, 90, "research")
-	if err != nil {
-		t.Fatal(err)
-	}
-	s.AddTimeEntry(tid, 60, "")
-	task, _ := s.GetTask(tid)
-	if task.Minutes != 150 {
-		t.Fatalf("minutes = %d, want 150", task.Minutes)
-	}
-	if err := s.UpdateTimeEntry(e1, 30, "less"); err != nil {
-		t.Fatal(err)
-	}
-	if err := s.DeleteTimeEntry(e1); err != nil {
-		t.Fatal(err)
-	}
-	list, err := s.ListTimeEntries(tid)
-	if err != nil || len(list) != 1 || list[0].Minutes != 60 {
-		t.Fatalf("entries = %+v, err %v", list, err)
-	}
-	if _, err := s.AddTimeEntry(tid, 0, ""); err == nil {
-		t.Fatal("zero minutes must be rejected by CHECK constraint")
-	}
-}

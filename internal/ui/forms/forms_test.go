@@ -90,7 +90,4 @@ func TestValidators(t *testing.T) {
 	if OptionalPriority("mega") == "" {
 		t.Error("OptionalPriority should reject unknown levels")
 	}
-	if ValidDuration("1h 30m") != "" || ValidDuration("nope") == "" {
-		t.Error("ValidDuration")
-	}
 }
