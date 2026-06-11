@@ -152,7 +152,7 @@ func (m Model) View() string {
 		marker := "  "
 		name := p.Name
 		if i == m.sel {
-			marker = styles.Cyan.Render("▸ ")
+			marker = styles.Cyan.Render(styles.Marker)
 			name = styles.Title.Render(name)
 		}
 		count := styles.Label.Render(fmt.Sprintf("  %d tasks", p.TaskCount))

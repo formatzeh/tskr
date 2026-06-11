@@ -22,6 +22,7 @@ func main() {
 		os.Exit(1)
 	}
 	styles.ApplyColors(cfg.Colors)
+	styles.ApplyMarker(cfg.Marker)
 
 	st, err := store.Open(cfg.DBPath)
 	if err != nil {

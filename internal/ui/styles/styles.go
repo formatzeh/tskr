@@ -50,6 +50,10 @@ var (
 	TabInactive lipgloss.Style
 )
 
+// Marker is the selection cursor glyph (+ trailing space) used in all lists.
+// Set via ApplyMarker before starting the UI.
+var Marker = "▶ "
+
 func init() { rebuildStyles() }
 
 func rebuildStyles() {
@@ -75,6 +79,20 @@ func rebuildStyles() {
 
 	TabActive   = lipgloss.NewStyle().Background(ColCyan).Foreground(ColBg).Bold(true).Padding(0, 1)
 	TabInactive = lipgloss.NewStyle().Foreground(ColGray).Padding(0, 1)
+}
+
+// ApplyMarker sets the selection cursor glyph from the config value.
+func ApplyMarker(m string) {
+	switch m {
+	case "chevron":
+		Marker = "❯ "
+	case "bar":
+		Marker = "┃ "
+	case "block":
+		Marker = "▌ "
+	default:
+		Marker = "▶ "
+	}
 }
 
 // ApplyColors overrides base colors from cfg and rebuilds all derived styles.

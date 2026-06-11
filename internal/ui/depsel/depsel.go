@@ -143,7 +143,7 @@ func (m Model) View() string {
 		marker := "  "
 		title := t.Title
 		if i == m.sel {
-			marker = styles.Cyan.Render("▸ ")
+			marker = styles.Cyan.Render(styles.Marker)
 			title = styles.Title.Render(title)
 		}
 		box := styles.Label.Render("[ ] ")

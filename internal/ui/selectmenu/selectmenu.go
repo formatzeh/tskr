@@ -53,7 +53,7 @@ func (m Model) View() string {
 	b.WriteString(styles.Title.Render(m.Title) + "\n\n")
 	for i, item := range m.Items {
 		if i == m.sel {
-			b.WriteString(styles.Cyan.Render("▸ "+item) + "\n")
+			b.WriteString(styles.Cyan.Render(styles.Marker+item) + "\n")
 		} else {
 			b.WriteString("  " + item + "\n")
 		}
