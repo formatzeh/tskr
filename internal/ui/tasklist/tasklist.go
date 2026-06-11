@@ -15,7 +15,6 @@ import (
 	"tskr/internal/ui/fuzzy"
 	"tskr/internal/ui/msgs"
 	"tskr/internal/ui/styles"
-	"tskr/internal/ui/timefmt"
 )
 
 type Tab int
@@ -256,9 +255,6 @@ func (m Model) View() string {
 		}
 		if t.NoteCount > 0 {
 			meta = append(meta, styles.Label.Render(fmt.Sprintf("[%d notes]", t.NoteCount)))
-		}
-		if t.Minutes > 0 {
-			meta = append(meta, styles.Green.Render("["+timefmt.FormatMinutes(t.Minutes)+"]"))
 		}
 		if t.DueDate != "" {
 			due := "due " + t.DueDate

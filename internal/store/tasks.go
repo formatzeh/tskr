@@ -73,7 +73,6 @@ const taskCols = `t.id, t.project_id, t.title, t.description, t.status,
 	(SELECT COUNT(*) FROM subtasks st WHERE st.task_id=t.id AND st.done=1),
 	(SELECT COUNT(*) FROM subtasks st WHERE st.task_id=t.id),
 	(SELECT COUNT(*) FROM notes n WHERE n.task_id=t.id),
-	COALESCE((SELECT SUM(e.minutes) FROM time_entries e WHERE e.task_id=t.id), 0),
 	EXISTS(SELECT 1 FROM task_deps d JOIN tasks b ON b.id=d.blocker_id WHERE d.blocked_id=t.id AND b.status!='done')`
 
 type scanner interface {
@@ -86,7 +85,7 @@ func scanTask(r scanner) (Task, error) {
 	var blocked int
 	err := r.Scan(&t.ID, &t.ProjectID, &t.Title, &t.Description, &status,
 		&prio, &t.DueDate, &t.Tags, &t.CreatedAt, &t.UpdatedAt, &t.CompletedAt,
-		&t.SubtasksDone, &t.SubtasksTotal, &t.NoteCount, &t.Minutes, &blocked)
+		&t.SubtasksDone, &t.SubtasksTotal, &t.NoteCount, &blocked)
 	t.Status = TaskStatus(status)
 	t.Priority = Priority(prio)
 	t.Blocked = blocked == 1

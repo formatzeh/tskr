@@ -23,7 +23,6 @@ import (
 	"tskr/internal/ui/selectmenu"
 	"tskr/internal/ui/styles"
 	"tskr/internal/ui/tasklist"
-	"tskr/internal/ui/timefmt"
 )
 
 type panel int
@@ -361,12 +360,6 @@ func (m Model) handleDetailKey(s string, key tea.KeyMsg) (tea.Model, tea.Cmd) {
 			return addNoteMsg{taskID: tid, body: v}
 		}))
 		return m, nil
-	case "t":
-		tid := task.ID
-		m.pushModal(forms.TimeForm("Log time", 0, "", func(mins int, note string) tea.Msg {
-			return addTimeMsg{taskID: tid, minutes: mins, note: note}
-		}))
-		return m, nil
 	case "b":
 		m.pushModal(depsel.New(m.st, *task))
 		return m, nil
@@ -382,11 +375,6 @@ func (m Model) handleDetailKey(s string, key tea.KeyMsg) (tea.Model, tea.Cmd) {
 				n := m.dt.Note(it.Idx)
 				m.pushModal(forms.TextForm("Edit note", "Note", n.Body, func(v string) tea.Msg {
 					return editNoteMsg{id: n.ID, body: v}
-				}))
-			case detail.ItemEntry:
-				e := m.dt.Entry(it.Idx)
-				m.pushModal(forms.TimeForm("Edit time entry", e.Minutes, e.Note, func(mins int, note string) tea.Msg {
-					return editTimeMsg{id: e.ID, minutes: mins, note: note}
 				}))
 			}
 		}
@@ -404,10 +392,6 @@ func (m Model) handleDetailKey(s string, key tea.KeyMsg) (tea.Model, tea.Cmd) {
 				title = "Delete this note?"
 				n := m.dt.Note(it.Idx)
 				action = func(bool) tea.Msg { return deleteNoteMsg{id: n.ID} }
-			case detail.ItemEntry:
-				e := m.dt.Entry(it.Idx)
-				title = fmt.Sprintf("Delete time entry (%s)?", timefmt.FormatMinutes(e.Minutes))
-				action = func(bool) tea.Msg { return deleteTimeMsg{id: e.ID} }
 			}
 			m.pushModal(confirm.New(title, []string{"This cannot be undone."}, false, action))
 		}

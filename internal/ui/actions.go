@@ -62,18 +62,6 @@ type editNoteMsg struct {
 }
 type deleteNoteMsg struct{ id int64 }
 
-type addTimeMsg struct {
-	taskID  int64
-	minutes int
-	note    string
-}
-type editTimeMsg struct {
-	id      int64
-	minutes int
-	note    string
-}
-type deleteTimeMsg struct{ id int64 }
-
 // handleAction performs the store mutation for an action message.
 // It returns ok=false when the message is not an action.
 func (m *Model) handleAction(msg tea.Msg) (tea.Cmd, bool) {
@@ -137,12 +125,6 @@ func (m *Model) handleAction(msg tea.Msg) (tea.Cmd, bool) {
 		err = m.st.UpdateNote(a.id, a.body)
 	case deleteNoteMsg:
 		err = m.st.DeleteNote(a.id)
-	case addTimeMsg:
-		_, err = m.st.AddTimeEntry(a.taskID, a.minutes, a.note)
-	case editTimeMsg:
-		err = m.st.UpdateTimeEntry(a.id, a.minutes, a.note)
-	case deleteTimeMsg:
-		err = m.st.DeleteTimeEntry(a.id)
 	default:
 		return nil, false
 	}

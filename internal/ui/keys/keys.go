@@ -20,7 +20,7 @@ var (
 	}
 	Detail = []Hint{
 		{"j/k", "move"}, {"space", "toggle"}, {"a", "subtask"}, {"n", "note"},
-		{"t", "log time"}, {"b", "deps"}, {"e", "edit"}, {"d", "delete"}, {"esc", "back"},
+		{"b", "deps"}, {"e", "edit"}, {"d", "delete"}, {"esc", "back"},
 	}
 	Search = []Hint{{"enter", "keep filter"}, {"esc", "clear"}}
 	Picker = []Hint{

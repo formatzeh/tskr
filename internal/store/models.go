@@ -54,7 +54,6 @@ type Task struct {
 	SubtasksDone  int
 	SubtasksTotal int
 	NoteCount     int
-	Minutes       int
 	Blocked       bool
 	BlockedBy     []TaskRef
 	Blocks        []TaskRef
@@ -80,14 +79,6 @@ type Note struct {
 	ID        int64
 	TaskID    int64
 	Body      string
-	CreatedAt string
-}
-
-type TimeEntry struct {
-	ID        int64
-	TaskID    int64
-	Minutes   int
-	Note      string
 	CreatedAt string
 }
 

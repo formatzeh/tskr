@@ -46,16 +46,7 @@ CREATE TABLE IF NOT EXISTS notes (
     created_at TEXT NOT NULL
 );
 
-CREATE TABLE IF NOT EXISTS time_entries (
-    id         INTEGER PRIMARY KEY AUTOINCREMENT,
-    task_id    INTEGER NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
-    minutes    INTEGER NOT NULL CHECK (minutes > 0),
-    note       TEXT NOT NULL DEFAULT '',
-    created_at TEXT NOT NULL
-);
-
 CREATE INDEX IF NOT EXISTS idx_tasks_project ON tasks(project_id);
 CREATE INDEX IF NOT EXISTS idx_subtasks_task ON subtasks(task_id);
 CREATE INDEX IF NOT EXISTS idx_notes_task ON notes(task_id);
-CREATE INDEX IF NOT EXISTS idx_time_task ON time_entries(task_id);
 CREATE INDEX IF NOT EXISTS idx_deps_blocked ON task_deps(blocked_id);

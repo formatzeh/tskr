@@ -3,8 +3,6 @@ package forms
 import (
 	"strings"
 	"time"
-
-	"tskr/internal/ui/timefmt"
 )
 
 func Required(s string) string {
@@ -31,11 +29,4 @@ func OptionalPriority(s string) string {
 		return ""
 	}
 	return "one of: low, medium, high, urgent — or empty"
-}
-
-func ValidDuration(s string) string {
-	if _, err := timefmt.ParseDuration(s); err != nil {
-		return err.Error()
-	}
-	return ""
 }

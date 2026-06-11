@@ -4,7 +4,6 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 
 	"tskr/internal/store"
-	"tskr/internal/ui/timefmt"
 )
 
 // TaskForm builds the new/edit task form. Values reach submit in the
@@ -69,21 +68,4 @@ func SubtaskForm(title string, st *store.Subtask, submit func(title, description
 func TextForm(title, label, value string, submit func(string) tea.Msg) Model {
 	fields := []Field{NewField(label, value, "", Required)}
 	return New(title, fields, func(vals []string) tea.Msg { return submit(vals[0]) })
-}
-
-// TimeForm asks for a duration and an optional note. Pass minutes=0 for
-// a new entry, or the current values when editing.
-func TimeForm(title string, minutes int, note string, submit func(minutes int, note string) tea.Msg) Model {
-	val := ""
-	if minutes > 0 {
-		val = timefmt.FormatMinutes(minutes)
-	}
-	fields := []Field{
-		NewField("Duration", val, "e.g. 1h 30m", ValidDuration),
-		NewField("Note", note, "optional", nil),
-	}
-	return New(title, fields, func(vals []string) tea.Msg {
-		mins, _ := timefmt.ParseDuration(vals[0]) // validated above
-		return submit(mins, vals[1])
-	})
 }

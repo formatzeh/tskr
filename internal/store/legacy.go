@@ -65,7 +65,7 @@ func (s *Store) migrateLegacy() error {
 	legacyTables := []string{
 		"projects", "tasks", "subtasks", "notes", "timelogs", "time_logs",
 		"tags", "task_tags", "project_tags", "task_dependencies",
-		"task_deps", "time_entries",
+		"task_deps",
 	}
 	for _, name := range legacyTables {
 		var n int
@@ -113,14 +113,11 @@ func (s *Store) migrateLegacy() error {
 		"tasks_legacy":             `(id INTEGER, project_id INTEGER, title TEXT, description TEXT, status TEXT, priority TEXT, due_date TEXT, created_at TEXT, updated_at TEXT)`,
 		"subtasks_legacy":          `(id INTEGER, task_id INTEGER, title TEXT, description TEXT, done INTEGER, created_at TEXT)`,
 		"notes_legacy":             `(id INTEGER, task_id INTEGER, content TEXT, created_at TEXT)`,
-		"timelogs_legacy":          `(id INTEGER, task_id INTEGER, minutes INTEGER, note TEXT, created_at TEXT)`,
-		"time_logs_legacy":         `(id INTEGER, task_id INTEGER, duration_minutes INTEGER, note TEXT, created_at TEXT)`,
 		"tags_legacy":              `(id INTEGER, name TEXT)`,
 		"task_tags_legacy":         `(task_id INTEGER, tag_id INTEGER)`,
 		"project_tags_legacy":      `(project_id INTEGER, tag_id INTEGER)`,
 		"task_dependencies_legacy": `(task_id INTEGER, blocks_task_id INTEGER)`,
 		"task_deps_legacy":         `(blocker_id INTEGER, blocked_id INTEGER)`,
-		"time_entries_legacy":      `(id INTEGER, task_id INTEGER, minutes INTEGER, note TEXT, created_at TEXT)`,
 	} {
 		if _, err := tx.Exec(`CREATE TABLE IF NOT EXISTS ` + name + ` ` + cols); err != nil {
 			return err
@@ -172,21 +169,6 @@ func (s *Store) migrateLegacy() error {
 		FROM notes_legacy n
 		WHERE EXISTS (SELECT 1 FROM tasks t WHERE t.id = n.task_id)`,
 
-		`INSERT INTO time_entries (task_id, minutes, note, created_at)
-		SELECT l.task_id, l.minutes, COALESCE(l.note, ''), ` + legacyTS("l.created_at") + `
-		FROM timelogs_legacy l
-		WHERE l.minutes > 0 AND EXISTS (SELECT 1 FROM tasks t WHERE t.id = l.task_id)`,
-
-		`INSERT INTO time_entries (task_id, minutes, note, created_at)
-		SELECT l.task_id, l.duration_minutes, COALESCE(l.note, ''), ` + legacyTS("l.created_at") + `
-		FROM time_logs_legacy l
-		WHERE l.duration_minutes > 0 AND EXISTS (SELECT 1 FROM tasks t WHERE t.id = l.task_id)`,
-
-		`INSERT INTO time_entries (task_id, minutes, note, created_at)
-		SELECT l.task_id, l.minutes, COALESCE(l.note, ''), l.created_at
-		FROM time_entries_legacy l
-		WHERE l.minutes > 0 AND EXISTS (SELECT 1 FROM tasks t WHERE t.id = l.task_id)`,
-
 		`INSERT OR IGNORE INTO task_deps (blocker_id, blocked_id)
 		SELECT d.task_id, d.blocks_task_id FROM task_dependencies_legacy d
 		WHERE d.task_id != d.blocks_task_id
@@ -208,8 +190,7 @@ func (s *Store) migrateLegacy() error {
 	// Children before parents so foreign keys don't block the drops.
 	for _, name := range []string{
 		"task_tags_legacy", "project_tags_legacy", "task_dependencies_legacy",
-		"task_deps_legacy", "time_entries_legacy",
-		"timelogs_legacy", "time_logs_legacy", "notes_legacy", "subtasks_legacy",
+		"task_deps_legacy", "notes_legacy", "subtasks_legacy",
 		"tags_legacy", "tasks_legacy", "projects_legacy",
 	} {
 		if _, err := tx.Exec(`DROP TABLE ` + name); err != nil {

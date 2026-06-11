@@ -1,6 +1,6 @@
 // Package detail is the right panel: a scrollable viewport over the
-// selected task with an inner cursor across subtasks, notes, and time
-// entries. Toggle/reorder run directly against the store; modal-opening
+// selected task with an inner cursor across subtasks and notes.
+// Toggle/reorder run directly against the store; modal-opening
 // actions are handled by the root model via CurrentItem().
 package detail
 
@@ -15,7 +15,6 @@ import (
 	"tskr/internal/store"
 	"tskr/internal/ui/msgs"
 	"tskr/internal/ui/styles"
-	"tskr/internal/ui/timefmt"
 )
 
 type ItemKind int
@@ -23,7 +22,6 @@ type ItemKind int
 const (
 	ItemSubtask ItemKind = iota
 	ItemNote
-	ItemEntry
 )
 
 // Item is an actionable row under the cursor.
@@ -39,7 +37,6 @@ type Model struct {
 	Task     *store.Task
 	subtasks []store.Subtask
 	notes    []store.Note
-	entries  []store.TimeEntry
 	items    []Item
 	cursor   int
 	vp       viewport.Model
@@ -61,7 +58,7 @@ func (m *Model) SetSize(w, h int) {
 
 func (m *Model) Clear() {
 	m.Task = nil
-	m.subtasks, m.notes, m.entries, m.items = nil, nil, nil, nil
+	m.subtasks, m.notes, m.items = nil, nil, nil
 	m.cursor = 0
 	m.rebuild()
 }
@@ -76,9 +73,6 @@ func (m *Model) SetTask(id int64) error {
 		return err
 	}
 	if m.notes, err = m.st.ListNotes(id); err != nil {
-		return err
-	}
-	if m.entries, err = m.st.ListTimeEntries(id); err != nil {
 		return err
 	}
 	m.rebuild()
@@ -107,7 +101,6 @@ func (m Model) CurrentItem() (Item, bool) {
 
 func (m Model) Subtask(i int) store.Subtask { return m.subtasks[i] }
 func (m Model) Note(i int) store.Note       { return m.notes[i] }
-func (m Model) Entry(i int) store.TimeEntry { return m.entries[i] }
 
 func (m *Model) Update(msg tea.Msg) tea.Cmd {
 	switch msg := msg.(type) {
@@ -188,11 +181,6 @@ func (m *Model) rebuild() {
 		tags = styles.Tag.Render(strings.ReplaceAll(t.Tags, ",", ", "))
 	}
 	lines = append(lines, label("Tags")+tags)
-	logged := styles.Label.Render("—")
-	if t.Minutes > 0 {
-		logged = styles.Green.Render(timefmt.FormatMinutes(t.Minutes) + " logged")
-	}
-	lines = append(lines, label("Time")+logged)
 	for i, r := range t.BlockedBy {
 		l := label("")
 		if i == 0 {
@@ -235,18 +223,6 @@ func (m *Model) rebuild() {
 	for i, n := range m.notes {
 		m.items = append(m.items, Item{Kind: ItemNote, ID: n.ID, Idx: i, line: len(lines)})
 		lines = append(lines, m.cursorMark(len(m.items)-1)+styles.Label.Render(fmtDateTime(n.CreatedAt))+" "+styles.Blue.Render(n.Body))
-	}
-
-	if len(m.entries) > 0 {
-		lines = append(lines, "", styles.Label.Render("Time log"))
-		for i, e := range m.entries {
-			m.items = append(m.items, Item{Kind: ItemEntry, ID: e.ID, Idx: i, line: len(lines)})
-			row := m.cursorMark(len(m.items)-1) + styles.Label.Render(fmtDateTime(e.CreatedAt)) + " " + styles.Green.Render(timefmt.FormatMinutes(e.Minutes))
-			if e.Note != "" {
-				row += " " + e.Note
-			}
-			lines = append(lines, row)
-		}
 	}
 
 	m.vp.SetContent(strings.Join(lines, "\n"))
