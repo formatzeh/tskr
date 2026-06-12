@@ -30,6 +30,7 @@ type Config struct {
 	SplitRatio float64     `toml:"split_ratio"` // left panel fraction, 0.2–0.8
 	DBPath     string      `toml:"db_path"`
 	Marker     string      `toml:"marker"` // "arrow" | "chevron" | "bar" | "block"
+	View       string      `toml:"view"`   // "list" | "kanban"
 	Colors     ColorConfig `toml:"colors"`
 }
 
@@ -39,6 +40,7 @@ func Default() Config {
 		SplitRatio: 0.42,
 		DBPath:     filepath.Join(DataDir(), "tskr.db"),
 		Marker:     "arrow",
+		View:       "list",
 	}
 }
 
@@ -87,6 +89,11 @@ func Load(path string) (Config, error) {
 	case "arrow", "chevron", "bar", "block":
 	default:
 		cfg.Marker = "arrow"
+	}
+	switch cfg.View {
+	case "list", "kanban":
+	default:
+		cfg.View = "list"
 	}
 	return cfg, nil
 }

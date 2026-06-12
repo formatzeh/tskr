@@ -13,9 +13,11 @@ Built with Go and Bubble Tea.
 ## Usage
 
 Run `tskr`. Press `?` inside the app for the full keybinding reference.
+Press `v` to toggle between the list view and a Kanban board (Pending /
+In Progress / Done columns); `H`/`L` move the selected card between columns.
 
 - Data: `~/.local/share/tskr/tskr.db` (daily backups alongside, 7 kept)
 - Config: `~/.config/tskr/config.toml` — `startup = "picker" | "last-project"`,
-  `split_ratio`, `db_path`
+  `split_ratio`, `db_path`, `view = "list" | "kanban"`
 
 Design and implementation docs live in `docs/superpowers/`.

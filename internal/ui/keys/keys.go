@@ -22,6 +22,11 @@ var (
 		{"j/k", "move"}, {"space", "toggle"}, {"a", "subtask"}, {"n", "note"},
 		{"b", "deps"}, {"e", "edit"}, {"d", "delete"}, {"esc", "back"},
 	}
+	Kanban = []Hint{
+		{"h/l", "column"}, {"j/k", "move"}, {"H/L", "move card"}, {"enter", "details"},
+		{"a", "add"}, {"e", "edit"}, {"d", "delete"}, {"v", "list view"},
+		{"p", "projects"}, {"?", "help"},
+	}
 	Search = []Hint{{"enter", "keep filter"}, {"esc", "clear"}}
 	Picker = []Hint{
 		{"j/k", "move"}, {"enter", "open"}, {"/", "search"}, {"n", "new"},
@@ -41,10 +46,11 @@ type Group struct {
 func HelpGroups() []Group {
 	return []Group{
 		{"Global", []Hint{
-			{"p", "project picker"}, {"<  >", "resize split"}, {"?", "help"},
-			{"q", "quit"}, {"esc", "back / close"},
+			{"p", "project picker"}, {"v", "toggle board"}, {"<  >", "resize split"},
+			{"?", "help"}, {"q", "quit"}, {"esc", "back / close"},
 		}},
 		{"Task list", TaskList},
+		{"Kanban board", Kanban},
 		{"Task list (extra)", []Hint{
 			{"tab / shift+tab", "next / previous tab"}, {"S", "status menu"},
 		}},

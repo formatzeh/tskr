@@ -17,6 +17,7 @@ import (
 	"tskr/internal/ui/detail"
 	"tskr/internal/ui/forms"
 	"tskr/internal/ui/help"
+	"tskr/internal/ui/kanban"
 	"tskr/internal/ui/keys"
 	"tskr/internal/ui/msgs"
 	"tskr/internal/ui/picker"
@@ -32,6 +33,13 @@ const (
 	panelDetail
 )
 
+type viewMode int
+
+const (
+	viewList viewMode = iota
+	viewKanban
+)
+
 type clearStatusMsg struct{}
 
 type Model struct {
@@ -42,9 +50,11 @@ type Model struct {
 	w, h    int
 	project *store.Project
 	focus   panel
+	view    viewMode
 
 	tl     tasklist.Model
 	dt     detail.Model
+	kb     kanban.Model
 	modals []tea.Model
 
 	status    string
@@ -52,7 +62,10 @@ type Model struct {
 }
 
 func New(st *store.Store, cfg *config.Config, cfgPath string) Model {
-	m := Model{st: st, cfg: cfg, cfgPath: cfgPath, tl: tasklist.New(st), dt: detail.New(st)}
+	m := Model{st: st, cfg: cfg, cfgPath: cfgPath, tl: tasklist.New(st), dt: detail.New(st), kb: kanban.New(st)}
+	if cfg.View == "kanban" {
+		m.view = viewKanban
+	}
 	opened := false
 	if cfg.Startup == "last-project" {
 		if idStr, _ := st.GetMeta("last_project_id"); idStr != "" {
@@ -77,6 +90,7 @@ func (m *Model) pushModal(mod tea.Model) { m.modals = append(m.modals, mod) }
 func (m *Model) openProject(p store.Project) {
 	m.project = &p
 	m.tl.SetProject(p.ID)
+	m.kb.SetProject(p.ID)
 	m.focus = panelTasks
 	m.tl.Focused = true
 	m.dt.Focused = false
@@ -101,6 +115,7 @@ func (m *Model) layout() {
 	leftW := int(float64(m.w) * m.cfg.SplitRatio)
 	m.tl.SetSize(leftW-2, innerH)
 	m.dt.SetSize(m.w-leftW-2, innerH)
+	m.kb.SetSize(m.w, bodyH)
 }
 
 func (m Model) Init() tea.Cmd { return nil }
@@ -145,6 +160,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		var cmds []tea.Cmd
 		if m.project != nil {
 			if cmd := m.tl.Update(msg); cmd != nil {
+				cmds = append(cmds, cmd)
+			}
+			m.kb.SetSort(m.tl.Sort())
+			if cmd := m.kb.Update(msg); cmd != nil {
 				cmds = append(cmds, cmd)
 			}
 			if t := m.tl.Selected(); t != nil {
@@ -218,10 +237,15 @@ func (m Model) handleKey(key tea.KeyMsg) (tea.Model, tea.Cmd) {
 	case "ctrl+c", "q":
 		return m, tea.Quit
 	case "?":
-		m.pushModal(help.New())
+		m.pushModal(help.New(m.w, m.h))
 		return m, nil
 	case "p":
 		m.pushModal(m.newPicker(m.project != nil))
+		return m, nil
+	case "v":
+		if m.project != nil {
+			return m.toggleView()
+		}
 		return m, nil
 	case "<", ">":
 		delta := -0.05
@@ -244,10 +268,35 @@ func (m Model) handleKey(key tea.KeyMsg) (tea.Model, tea.Cmd) {
 	if m.project == nil {
 		return m, nil
 	}
+	if m.view == viewKanban {
+		return m.handleKanbanKey(s, key)
+	}
 	if m.focus == panelTasks {
 		return m.handleTasksKey(s, key)
 	}
 	return m.handleDetailKey(s, key)
+}
+
+// toggleView switches between the list and kanban views, persisting the
+// choice and reloading the newly active component.
+func (m Model) toggleView() (tea.Model, tea.Cmd) {
+	if m.view == viewKanban {
+		m.view = viewList
+		m.cfg.View = "list"
+		m.focus = panelTasks
+		m.tl.Focused = true
+		m.dt.Focused = false
+		m.tl.Reload()
+		m.syncDetail()
+	} else {
+		m.view = viewKanban
+		m.cfg.View = "kanban"
+		m.kb.SetSort(m.tl.Sort())
+		m.kb.Reload()
+	}
+	config.Save(m.cfgPath, *m.cfg)
+	m.layout()
+	return m, nil
 }
 
 func nextStatus(s store.TaskStatus) store.TaskStatus {
@@ -273,37 +322,16 @@ func (m Model) handleTasksKey(s string, key tea.KeyMsg) (tea.Model, tea.Cmd) {
 		}
 		return m, nil
 	case "a":
-		pid := m.project.ID
-		m.pushModal(forms.TaskForm("New task", nil, func(title, desc string, prio store.Priority, due, tags string) tea.Msg {
-			return saveTaskMsg{projectID: pid, title: title, desc: desc, prio: prio, due: due, tags: tags}
-		}))
+		m.addTaskModal()
 		return m, nil
 	case "e":
 		if sel != nil {
-			t := *sel
-			m.pushModal(forms.TaskForm("Edit task", &t, func(title, desc string, prio store.Priority, due, tags string) tea.Msg {
-				return saveTaskMsg{id: t.ID, title: title, desc: desc, prio: prio, due: due, tags: tags}
-			}))
+			m.editTaskModal(*sel)
 		}
 		return m, nil
 	case "d":
 		if sel != nil {
-			t := *sel
-			full, err := m.st.GetTask(t.ID)
-			if err != nil {
-				return m, msgs.Err(err)
-			}
-			lines := []string{"This cannot be undone."}
-			cascadeOnly := len(full.Blocks) > 0
-			if cascadeOnly {
-				lines = []string{"This task blocks:"}
-				for _, r := range full.Blocks {
-					lines = append(lines, "  ⛔ "+r.Title)
-				}
-				lines = append(lines, "", "Cascade removes these dependency links (the tasks survive).")
-			}
-			m.pushModal(confirm.New(fmt.Sprintf("Delete task %q?", t.Title), lines, cascadeOnly,
-				func(cascade bool) tea.Msg { return deleteTaskMsg{id: t.ID, cascade: cascade} }))
+			return m, m.deleteTaskModal(*sel)
 		}
 		return m, nil
 	case "s":
@@ -315,22 +343,125 @@ func (m Model) handleTasksKey(s string, key tea.KeyMsg) (tea.Model, tea.Cmd) {
 		return m, nil
 	case "S":
 		if sel != nil {
-			id := sel.ID
-			statuses := []store.TaskStatus{store.StatusPending, store.StatusInProgress, store.StatusDone}
-			initial := 0
-			for i, st := range statuses {
-				if st == sel.Status {
-					initial = i
-				}
-			}
-			m.pushModal(selectmenu.New("Set status", []string{"Pending", "In Progress", "Done"}, initial,
-				func(i int) tea.Msg { return setStatusMsg{id: id, status: statuses[i]} }))
+			m.statusMenuModal(*sel)
 		}
 		return m, nil
 	default:
 		cmd := m.tl.Update(key)
 		m.syncDetail()
 		return m, cmd
+	}
+}
+
+// Shared task-action modals, used by both the list and kanban handlers.
+
+func (m *Model) addTaskModal() {
+	pid := m.project.ID
+	m.pushModal(forms.TaskForm("New task", nil, func(title, desc string, prio store.Priority, due, tags string) tea.Msg {
+		return saveTaskMsg{projectID: pid, title: title, desc: desc, prio: prio, due: due, tags: tags}
+	}))
+}
+
+func (m *Model) editTaskModal(t store.Task) {
+	m.pushModal(forms.TaskForm("Edit task", &t, func(title, desc string, prio store.Priority, due, tags string) tea.Msg {
+		return saveTaskMsg{id: t.ID, title: title, desc: desc, prio: prio, due: due, tags: tags}
+	}))
+}
+
+func (m *Model) deleteTaskModal(t store.Task) tea.Cmd {
+	full, err := m.st.GetTask(t.ID)
+	if err != nil {
+		return msgs.Err(err)
+	}
+	lines := []string{"This cannot be undone."}
+	cascadeOnly := len(full.Blocks) > 0
+	if cascadeOnly {
+		lines = []string{"This task blocks:"}
+		for _, r := range full.Blocks {
+			lines = append(lines, "  ⛔ "+r.Title)
+		}
+		lines = append(lines, "", "Cascade removes these dependency links (the tasks survive).")
+	}
+	m.pushModal(confirm.New(fmt.Sprintf("Delete task %q?", t.Title), lines, cascadeOnly,
+		func(cascade bool) tea.Msg { return deleteTaskMsg{id: t.ID, cascade: cascade} }))
+	return nil
+}
+
+func (m *Model) statusMenuModal(t store.Task) {
+	id := t.ID
+	statuses := []store.TaskStatus{store.StatusPending, store.StatusInProgress, store.StatusDone}
+	initial := 0
+	for i, st := range statuses {
+		if st == t.Status {
+			initial = i
+		}
+	}
+	m.pushModal(selectmenu.New("Set status", []string{"Pending", "In Progress", "Done"}, initial,
+		func(i int) tea.Msg { return setStatusMsg{id: id, status: statuses[i]} }))
+}
+
+func (m Model) handleKanbanKey(s string, key tea.KeyMsg) (tea.Model, tea.Cmd) {
+	sel := m.kb.Selected()
+	switch s {
+	case "enter":
+		// Hand off to the list+detail view, landing on this card.
+		if sel != nil {
+			m.view = viewList
+			m.cfg.View = "list"
+			config.Save(m.cfgPath, *m.cfg)
+			m.tl.SwitchToStatus(sel.Status, sel.ID)
+			m.tl.Reload()
+			m.focus = panelDetail
+			m.tl.Focused = false
+			m.dt.Focused = true
+			m.dt.SetTask(sel.ID)
+			m.layout()
+		}
+		return m, nil
+	case "H", "L":
+		if sel != nil {
+			delta := -1
+			if s == "L" {
+				delta = 1
+			}
+			target := m.kb.Col() + delta
+			if target < 0 || target > 2 {
+				return m, nil
+			}
+			m.kb.FocusTask(sel.ID) // keep the cursor on the moved card
+			if cmd, ok := m.handleAction(setStatusMsg{id: sel.ID, status: kanban.Statuses[target]}); ok {
+				return m, cmd
+			}
+		}
+		return m, nil
+	case "a":
+		m.addTaskModal()
+		return m, nil
+	case "e":
+		if sel != nil {
+			m.editTaskModal(*sel)
+		}
+		return m, nil
+	case "d":
+		if sel != nil {
+			return m, m.deleteTaskModal(*sel)
+		}
+		return m, nil
+	case "s":
+		if sel != nil {
+			m.kb.FocusTask(sel.ID)
+			if cmd, ok := m.handleAction(setStatusMsg{id: sel.ID, status: nextStatus(sel.Status)}); ok {
+				return m, cmd
+			}
+		}
+		return m, nil
+	case "S":
+		if sel != nil {
+			m.statusMenuModal(*sel)
+		}
+		return m, nil
+	default:
+		return m, m.kb.Update(key)
 	}
 }
 
@@ -414,6 +545,9 @@ func (m Model) View() string {
 	if m.project == nil {
 		return ""
 	}
+	if m.view == viewKanban {
+		return lipgloss.JoinVertical(lipgloss.Left, m.renderKanbanHeader(), m.kb.View(), m.renderStatusBar())
+	}
 	tabs := m.renderTabs()
 	leftW := int(float64(m.w) * m.cfg.SplitRatio)
 	bodyH := m.h - 2
@@ -456,6 +590,16 @@ func (m Model) renderTabs() string {
 	return tabs + strings.Repeat(" ", pad) + name
 }
 
+func (m Model) renderKanbanHeader() string {
+	label := styles.TabActive.Render("Board")
+	name := styles.Tag.Render(m.project.Name)
+	pad := m.w - lipgloss.Width(label) - lipgloss.Width(name) - 1
+	if pad < 1 {
+		pad = 1
+	}
+	return label + strings.Repeat(" ", pad) + name
+}
+
 func (m Model) renderStatusText() string {
 	if m.status == "" {
 		return ""
@@ -473,6 +617,8 @@ func (m Model) renderStatusBar() string {
 	}
 	var hints []keys.Hint
 	switch {
+	case m.view == viewKanban:
+		hints = keys.Kanban
 	case m.focus == panelDetail:
 		hints = keys.Detail
 	case m.tl.Searching():
