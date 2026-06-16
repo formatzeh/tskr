@@ -62,6 +62,21 @@ type editNoteMsg struct {
 }
 type deleteNoteMsg struct{ id int64 }
 
+type saveNotifMsg struct {
+	id             int64
+	taskID         int64
+	title, body    string
+	urgency        string
+	mode           string
+	dueDate        string
+	intervalMin    int
+	triggerStatus  string
+	active         bool
+}
+type confirmDeleteNotifMsg struct{ id int64 }
+type deleteNotifMsg struct{ id int64 }
+type toggleNotifActiveMsg struct{ id int64 }
+
 // handleAction performs the store mutation for an action message.
 // It returns ok=false when the message is not an action.
 func (m *Model) handleAction(msg tea.Msg) (tea.Cmd, bool) {
@@ -125,6 +140,30 @@ func (m *Model) handleAction(msg tea.Msg) (tea.Cmd, bool) {
 		err = m.st.UpdateNote(a.id, a.body)
 	case deleteNoteMsg:
 		err = m.st.DeleteNote(a.id)
+	case saveNotifMsg:
+		if a.id == 0 {
+			_, err = m.st.CreateNotification(a.taskID, a.title, a.body, a.urgency, a.mode, a.dueDate, a.intervalMin, a.triggerStatus, a.active)
+			info = "notification added"
+		} else {
+			err = m.st.UpdateNotification(a.id, a.title, a.body, a.urgency, a.mode, a.dueDate, a.intervalMin, a.triggerStatus, a.active)
+			info = "notification updated"
+		}
+	case deleteNotifMsg:
+		err = m.st.DeleteNotification(a.id)
+		info = "notification deleted"
+	case toggleNotifActiveMsg:
+		if notif, gerr := m.st.GetNotification(a.id); gerr == nil {
+			err = m.st.SetNotificationActive(a.id, !notif.Active)
+			if err == nil {
+				if !notif.Active {
+					info = "notification activated"
+				} else {
+					info = "notification deactivated"
+				}
+			}
+		} else {
+			err = gerr
+		}
 	default:
 		return nil, false
 	}

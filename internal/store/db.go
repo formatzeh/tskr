@@ -76,7 +76,49 @@ func (s *Store) migrate() error {
 		if _, err := s.db.Exec(`ALTER TABLE subtasks ADD COLUMN description TEXT NOT NULL DEFAULT ''`); err != nil {
 			return err
 		}
-		return s.SetMeta("schema_version", "2")
+		if err := s.SetMeta("schema_version", "2"); err != nil {
+			return err
+		}
+		v = "2"
+	}
+	if v == "2" {
+		_, err := s.db.Exec(`CREATE TABLE IF NOT EXISTS notifications (
+			id               INTEGER PRIMARY KEY AUTOINCREMENT,
+			task_id          INTEGER NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
+			title            TEXT NOT NULL DEFAULT '',
+			body             TEXT NOT NULL DEFAULT '',
+			urgency          TEXT NOT NULL DEFAULT 'normal' CHECK (urgency IN ('normal','critical')),
+			mode             TEXT NOT NULL DEFAULT 'once' CHECK (mode IN ('once','recurring','interval')),
+			due_date         TEXT NOT NULL DEFAULT '',
+			interval_minutes INTEGER NOT NULL DEFAULT 0,
+			trigger_status   TEXT NOT NULL DEFAULT 'pending',
+			last_sent        TEXT NOT NULL DEFAULT '',
+			created_at       TEXT NOT NULL,
+			updated_at       TEXT NOT NULL
+		)`)
+		if err != nil {
+			return err
+		}
+		if _, err := s.db.Exec(`CREATE INDEX IF NOT EXISTS idx_notifications_task ON notifications(task_id)`); err != nil {
+			return err
+		}
+		if err := s.SetMeta("schema_version", "3"); err != nil {
+			return err
+		}
+		v = "3"
+	}
+	if v == "3" {
+		// Check if column already exists (fresh installs have it in schema.sql)
+		var cnt int
+		if err := s.db.QueryRow(`SELECT COUNT(*) FROM pragma_table_info('notifications') WHERE name='active'`).Scan(&cnt); err != nil {
+			return err
+		}
+		if cnt == 0 {
+			if _, err := s.db.Exec(`ALTER TABLE notifications ADD COLUMN active INTEGER NOT NULL DEFAULT 1`); err != nil {
+				return err
+			}
+		}
+		return s.SetMeta("schema_version", "4")
 	}
 	return nil
 }

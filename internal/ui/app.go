@@ -3,6 +3,7 @@ package ui
 
 import (
 	"fmt"
+	"os/exec"
 	"strconv"
 	"strings"
 	"time"
@@ -18,6 +19,7 @@ import (
 	"tskr/internal/ui/forms"
 	"tskr/internal/ui/help"
 	"tskr/internal/ui/kanban"
+	"tskr/internal/ui/notification"
 	"tskr/internal/ui/keys"
 	"tskr/internal/ui/msgs"
 	"tskr/internal/ui/picker"
@@ -85,6 +87,17 @@ func New(st *store.Store, cfg *config.Config, cfgPath string) Model {
 
 func (m *Model) newPicker(allowClose bool) tea.Model { return picker.New(m.st, allowClose) }
 
+func (m *Model) sendNotifNow(n store.Notification) {
+	go func() {
+		u := "--urgency=" + n.Urgency
+		title := n.Title
+		if title == "" {
+			title = "tskr"
+		}
+		exec.Command("notify-send", u, title, n.Body).Run()
+	}()
+}
+
 func (m *Model) pushModal(mod tea.Model) { m.modals = append(m.modals, mod) }
 
 func (m *Model) openProject(p store.Project) {
@@ -118,7 +131,13 @@ func (m *Model) layout() {
 	m.kb.SetSize(m.w, bodyH)
 }
 
-func (m Model) Init() tea.Cmd { return nil }
+func (m Model) Init() tea.Cmd { return notifTickCmd() }
+
+func notifTickCmd() tea.Cmd {
+	return tea.Tick(30*time.Second, func(t time.Time) tea.Msg {
+		return msgs.NotifTick{}
+	})
+}
 
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
@@ -184,6 +203,25 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		}
 		return m, tea.Batch(cmds...)
+
+	case confirmDeleteNotifMsg:
+		if len(m.modals) > 0 {
+			m.modals = m.modals[:len(m.modals)-1]
+		}
+		m.pushModal(confirm.New("Delete notification?", []string{"This cannot be undone."}, false,
+			func(bool) tea.Msg { return deleteNotifMsg{id: msg.id} },
+		))
+		return m, nil
+
+	case msgs.NotifTick:
+		notifs, err := m.st.DueNotifications()
+		if err == nil {
+			for _, n := range notifs {
+				m.st.MarkNotificationSent(n.ID)
+				m.sendNotifNow(n)
+			}
+		}
+		return m, notifTickCmd()
 
 	case msgs.NewProjectForm:
 		m.pushModal(forms.ProjectForm("New project", nil, func(name, desc, tags string) tea.Msg {
@@ -465,6 +503,13 @@ func (m Model) handleKanbanKey(s string, key tea.KeyMsg) (tea.Model, tea.Cmd) {
 	}
 }
 
+func notifID(n *store.Notification) int64 {
+	if n != nil {
+		return n.ID
+	}
+	return 0
+}
+
 func (m Model) handleDetailKey(s string, key tea.KeyMsg) (tea.Model, tea.Cmd) {
 	task := m.dt.Task
 	if task == nil {
@@ -490,6 +535,30 @@ func (m Model) handleDetailKey(s string, key tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.pushModal(forms.TextForm("New note", "Note", "", func(v string) tea.Msg {
 			return addNoteMsg{taskID: tid, body: v}
 		}))
+		return m, nil
+	case "N":
+		if task != nil {
+			tid := task.ID
+			notif := m.dt.Notification()
+			existingID := notifID(notif)
+			m.pushModal(notification.New(*task, notif,
+				func(title, body, urgency, mode, dueDate string, intervalMin int, triggerStatus string, active bool) tea.Msg {
+					return saveNotifMsg{id: existingID, taskID: tid, title: title, body: body, urgency: urgency, mode: mode, dueDate: dueDate, intervalMin: intervalMin, triggerStatus: triggerStatus, active: active}
+				},
+				func(id int64) tea.Msg {
+					return confirmDeleteNotifMsg{id: id}
+				},
+			))
+		}
+		return m, nil
+	case "A":
+		if task != nil {
+			if notif := m.dt.Notification(); notif != nil {
+				if cmd, ok := m.handleAction(toggleNotifActiveMsg{id: notif.ID}); ok {
+					return m, cmd
+				}
+			}
+		}
 		return m, nil
 	case "b":
 		m.pushModal(depsel.New(m.st, *task))

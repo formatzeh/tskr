@@ -31,6 +31,7 @@ type Config struct {
 	DBPath     string      `toml:"db_path"`
 	Marker     string      `toml:"marker"` // "arrow" | "chevron" | "bar" | "block"
 	View       string      `toml:"view"`   // "list" | "kanban"
+	NotifyCron bool `toml:"notify_cron"` // enable tsksr notify via cron
 	Colors     ColorConfig `toml:"colors"`
 }
 
@@ -41,6 +42,7 @@ func Default() Config {
 		DBPath:     filepath.Join(DataDir(), "tskr.db"),
 		Marker:     "arrow",
 		View:       "list",
+		NotifyCron: false,
 	}
 }
 

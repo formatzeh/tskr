@@ -33,16 +33,17 @@ type Item struct {
 }
 
 type Model struct {
-	st       *store.Store
-	Task     *store.Task
-	subtasks []store.Subtask
-	notes    []store.Note
-	items    []Item
-	cursor   int
-	vp       viewport.Model
-	Focused  bool
-	width    int
-	height   int
+	st            *store.Store
+	Task          *store.Task
+	subtasks      []store.Subtask
+	notes         []store.Note
+	notifications []store.Notification
+	items         []Item
+	cursor        int
+	vp            viewport.Model
+	Focused       bool
+	width         int
+	height        int
 }
 
 func New(st *store.Store) Model {
@@ -58,7 +59,7 @@ func (m *Model) SetSize(w, h int) {
 
 func (m *Model) Clear() {
 	m.Task = nil
-	m.subtasks, m.notes, m.items = nil, nil, nil
+	m.subtasks, m.notes, m.notifications, m.items = nil, nil, nil, nil
 	m.cursor = 0
 	m.rebuild()
 }
@@ -74,6 +75,9 @@ func (m *Model) SetTask(id int64) error {
 	}
 	if m.notes, err = m.st.ListNotes(id); err != nil {
 		return err
+	}
+	if m.notifications, err = m.st.ListNotifications(id); err != nil {
+		m.notifications = nil
 	}
 	m.rebuild()
 	if m.cursor >= len(m.items) {
@@ -101,6 +105,12 @@ func (m Model) CurrentItem() (Item, bool) {
 
 func (m Model) Subtask(i int) store.Subtask { return m.subtasks[i] }
 func (m Model) Note(i int) store.Note       { return m.notes[i] }
+func (m Model) Notification() *store.Notification {
+	if len(m.notifications) == 0 {
+		return nil
+	}
+	return &m.notifications[0]
+}
 
 func (m *Model) Update(msg tea.Msg) tea.Cmd {
 	switch msg := msg.(type) {
@@ -225,6 +235,41 @@ func (m *Model) rebuild() {
 		lines = append(lines, m.cursorMark(len(m.items)-1)+styles.Label.Render(fmtDateTime(n.CreatedAt))+" "+styles.Blue.Render(n.Body))
 	}
 
+	lines = append(lines, "", styles.Label.Render("Notifications")+"   "+fmt.Sprintf("%d", len(m.notifications)))
+	for _, n := range m.notifications {
+		pre := styles.Label.Render("  ")
+		modeIcon := "⏰"
+		switch n.Mode {
+		case store.NotifRecurring:
+			modeIcon = "🔁"
+		case store.NotifInterval:
+			modeIcon = "⏱"
+		}
+		urgency := styles.Green.Render(n.Urgency)
+		if n.Urgency == store.UrgencyCritical {
+			urgency = styles.Red.Render("critical")
+		}
+		active := styles.Green.Render("●")
+		if !n.Active {
+			active = styles.Label.Render("○")
+		}
+		info := " " + active + " " + modeIcon + " " + n.Title + " — "
+		if n.Mode == store.NotifInterval {
+			info += fmt.Sprintf("every %d min", n.IntervalMinutes)
+		} else {
+			info += n.DueDate
+		}
+		info += " (" + urgency + ")"
+		info += " " + styles.Label.Render(fmtStatuses(n.TriggerStatus))
+		if n.LastSent != "" {
+			info += styles.Green.Render(" ✓")
+		}
+		lines = append(lines, pre+info)
+		if n.Body != "" {
+			lines = append(lines, "    "+styles.Label.Render(n.Body))
+		}
+	}
+
 	m.vp.SetContent(strings.Join(lines, "\n"))
 	m.scrollToCursor()
 }
@@ -293,3 +338,18 @@ func fmtDateTime(rfc string) string {
 }
 
 func (m Model) View() string { return m.vp.View() }
+
+func fmtStatuses(s string) string {
+	parts := strings.Split(s, ",")
+	for i, p := range parts {
+		switch strings.TrimSpace(p) {
+		case "pending":
+			parts[i] = "Pending"
+		case "in_progress":
+			parts[i] = "In Progress"
+		case "done":
+			parts[i] = "Done"
+		}
+	}
+	return "[" + strings.Join(parts, ", ") + "]"
+}

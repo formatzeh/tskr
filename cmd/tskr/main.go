@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"time"
 
@@ -21,6 +22,12 @@ func main() {
 		fmt.Fprintln(os.Stderr, "tskr: config:", err)
 		os.Exit(1)
 	}
+
+	if len(os.Args) > 1 && os.Args[1] == "notify" {
+		runNotify(cfg)
+		return
+	}
+
 	styles.ApplyColors(cfg.Colors)
 	styles.ApplyMarker(cfg.Marker)
 
@@ -41,5 +48,32 @@ func main() {
 	if _, err := p.Run(); err != nil {
 		fmt.Fprintln(os.Stderr, "tskr:", err)
 		os.Exit(1)
+	}
+}
+
+func runNotify(cfg config.Config) {
+	if !cfg.NotifyCron {
+		return
+	}
+	st, err := store.Open(cfg.DBPath)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "tskr notify:", err)
+		os.Exit(1)
+	}
+	defer st.Close()
+
+	notifs, err := st.DueNotifications()
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "tskr notify:", err)
+		os.Exit(1)
+	}
+	for _, n := range notifs {
+		u := "--urgency=" + n.Urgency
+		title := n.Title
+		if title == "" {
+			title = "tskr"
+		}
+		exec.Command("notify-send", u, title, n.Body).Run()
+		st.MarkNotificationSent(n.ID)
 	}
 }

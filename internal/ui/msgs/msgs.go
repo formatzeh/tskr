@@ -23,6 +23,9 @@ type NewProjectForm struct{}
 type EditProjectForm struct{ Project store.Project }
 type DeleteProject struct{ Project store.Project }
 
+// NotifTick triggers periodic notification checks.
+type NotifTick struct{}
+
 // Status shows a transient message in the status bar.
 type Status struct {
 	Text  string

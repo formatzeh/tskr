@@ -20,7 +20,7 @@ var (
 	}
 	Detail = []Hint{
 		{"j/k", "move"}, {"space", "toggle"}, {"a", "subtask"}, {"n", "note"},
-		{"b", "deps"}, {"e", "edit"}, {"d", "delete"}, {"esc", "back"},
+		{"N", "notifications"}, {"A", "on/off"}, {"b", "deps"}, {"e", "edit"}, {"d", "delete"}, {"esc", "back"},
 	}
 	Kanban = []Hint{
 		{"h/l", "column"}, {"j/k", "move"}, {"H/L", "move card"}, {"enter", "details"},
@@ -54,7 +54,7 @@ func HelpGroups() []Group {
 		{"Task list (extra)", []Hint{
 			{"tab / shift+tab", "next / previous tab"}, {"S", "status menu"},
 		}},
-		{"Details", append(append([]Hint{}, Detail...), Hint{"J/K", "reorder subtask"})},
+		{"Details", append(append([]Hint{}, Detail...), Hint{"J/K", "reorder subtask"}, Hint{"N", "notifications"})},
 		{"Project picker", Picker},
 		{"Forms", Form},
 		{"Dependencies", Deps},

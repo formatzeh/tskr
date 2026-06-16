@@ -82,6 +82,30 @@ type Note struct {
 	CreatedAt string
 }
 
+type Notification struct {
+	ID              int64
+	TaskID          int64
+	Title           string
+	Body            string
+	Urgency         string // "normal", "critical"
+	Mode            string // "once", "recurring", "interval"
+	DueDate         string // "once": "YYYY-MM-DD HH:MM", "recurring": "HH:MM"
+	IntervalMinutes int
+	TriggerStatus   string // comma-separated task statuses
+	Active          bool   // false = paused
+	LastSent        string
+	CreatedAt       string
+	UpdatedAt       string
+}
+
+const (
+	UrgencyNormal   = "normal"
+	UrgencyCritical = "critical"
+	NotifOnce       = "once"
+	NotifRecurring  = "recurring"
+	NotifInterval   = "interval"
+)
+
 // Overdue reports whether the task is past due. today is "YYYY-MM-DD".
 func (t Task) Overdue(today string) bool {
 	return t.DueDate != "" && t.DueDate < today && t.Status != StatusDone
