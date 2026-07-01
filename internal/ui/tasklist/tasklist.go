@@ -64,7 +64,7 @@ func New(st *store.Store) Model {
 	ti := textinput.New()
 	ti.Placeholder = "search…"
 	ti.Width = 24
-	return Model{st: st, tab: TabPending, sort: store.SortCreated, search: ti, Focused: true}
+	return Model{st: st, tab: TabAll, sort: store.SortCreated, search: ti, Focused: true}
 }
 
 func (m *Model) SetSize(w, h int) { m.width, m.height = w, h }

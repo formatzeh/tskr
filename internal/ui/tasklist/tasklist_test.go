@@ -41,8 +41,11 @@ func TestTabsFilterByStatus(t *testing.T) {
 	if err := m.SetProject(pid); err != nil {
 		t.Fatal(err)
 	}
-	if sel := m.Selected(); sel == nil || sel.ID != a {
-		t.Fatalf("pending tab should show task a, got %+v", sel)
+	if m.CurrentTab() != TabAll {
+		t.Fatalf("default tab should be All, got %s", m.CurrentTab())
+	}
+	if len(m.Visible()) != 2 {
+		t.Fatalf("all tab should show 2, got %d", len(m.Visible()))
 	}
 	m.Update(key("4")) // Done tab
 	if sel := m.Selected(); sel == nil || sel.ID != b {
@@ -51,6 +54,10 @@ func TestTabsFilterByStatus(t *testing.T) {
 	m.Update(key("1")) // All tab
 	if len(m.Visible()) != 2 {
 		t.Fatalf("all tab should show 2, got %d", len(m.Visible()))
+	}
+	m.Update(key("2")) // Pending tab
+	if sel := m.Selected(); sel == nil || sel.ID != a {
+		t.Fatalf("pending tab should show task a, got %+v", sel)
 	}
 }
 
